@@ -5,7 +5,7 @@ export const API_CONFIG = {
     allIpos: '/api/ipo/all',
     upcoming: '/api/ipo/upcoming',
     closed: '/api/ipo/closed',
-    // Add more endpoints as needed
+    search: '/api/ipo/search',
     getIpoBySlug: (slug: string) => `/api/ipo/${slug}`,
   }
 } as const;
