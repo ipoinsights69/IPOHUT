@@ -10,6 +10,7 @@ export const API_CONFIG = {
     search: '/api/ipo/search',
     getIpoDetails: (slug: string) => `/api/ipo/details/${slug}`,
     getIpoStatistics: '/api/ipo/statistics',
+    listingGains: '/api/ipo/listing-gains',
   }
 } as const;
 
@@ -21,7 +22,7 @@ export interface IpoData {
   status: string;
   url: string;
   year: number;
-  ipo_details?: Array<Record<string, string>>;
+  ipo_details?: Array<[string, string]>;
   timeline?: Array<[string, string]>;
 }
 
@@ -33,8 +34,8 @@ export interface IpoDetailData {
   company_name: string;
   EPS: Array<Record<string, string>>;
   KPI: Array<{KPI: string; Values: string}>;
-  ipo_details: Array<Record<string, string>>;
-  ipo_price: Array<Record<string, string>>;
+  ipo_details: Array<[string, string]>;
+  ipo_price: Array<[string, string]>;
   lots: Array<Record<string, string>>;
   objectives: Array<Record<string, string>>;
   promoters: string;
@@ -77,6 +78,36 @@ export interface IpoStatistics {
   }>;
   by_industry?: Record<string, number>;
   by_listing_type?: Record<string, number>;
+}
+
+export interface IpoListingGain {
+  name: string;
+  slug: string;
+  status: string;
+  listing_gain_percent: string;
+  ipo_date: string;
+  issue_size: string | null;
+  listing_at: string;
+  listing_date: string;
+  listing_trading: {
+    "Final Issue Price": string;
+    "High": string;
+    "Last Trade": string;
+    "Low": string;
+    "Open": string;
+  };
+  year: number;
+}
+
+export interface ListingGainsResponse {
+  filters: {
+    limit: number;
+    status: string | null;
+    year: number | null;
+  };
+  ipos: IpoListingGain[];
+  sort_by: string;
+  total_count: number;
 }
 
 // API utility functions
@@ -145,6 +176,24 @@ export const apiUtils = {
     } catch (error) {
       console.error('Error fetching slugs:', error);
       return [];
+    }
+  },
+
+  async fetchListingGains(limit: number = 6, sortBy: string = 'gain_desc'): Promise<ListingGainsResponse | null> {
+    try {
+      const url = new URL(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.listingGains}`);
+      url.searchParams.append('limit', limit.toString());
+      url.searchParams.append('sort_by', sortBy);
+      
+      const response = await fetch(url.toString());
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching listing gains:', error);
+      return null;
     }
   }
 };
