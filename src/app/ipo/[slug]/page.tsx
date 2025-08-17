@@ -2,15 +2,14 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { apiUtils, IpoDetailData } from "@/config/api";
+import { apiUtils, IpoDetailData, IpoData } from "@/config/api";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, CheckCircle, TrendingUp, ArrowRight, FileText, Users, BarChart3, PieChart, Target, Building2 } from "lucide-react";
+import { Calendar, Clock, CheckCircle, TrendingUp, ArrowRight, FileText, Users, BarChart3, Target, Building2 } from "lucide-react";
 
 // Client component - no static generation needed
 
 export default function IpoDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
-  const [slug, setSlug] = useState<string>('');
-  const [basicData, setBasicData] = useState<any>(null);
+  const [basicData, setBasicData] = useState<IpoData | null>(null);
   const [detailData, setDetailData] = useState<IpoDetailData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,7 +19,6 @@ export default function IpoDetailsPage({ params }: { params: Promise<{ slug: str
       try {
         const resolvedParams = await params;
         const slugValue = resolvedParams.slug;
-        setSlug(slugValue);
         
         const basic = await apiUtils.fetchIpoBySlug(slugValue);
         if (!basic) {
@@ -129,7 +127,7 @@ function IpoDetailPageClient({
   getStatusColor, 
   getStatusIcon 
 }: {
-  basicData: any;
+  basicData: IpoData | null;
   detailData: IpoDetailData | null;
   keyMetrics: Record<string, string>;
   getStatusColor: (status: string) => string;
@@ -155,7 +153,7 @@ function IpoDetailPageClient({
             <span className="mx-2">/</span>
             <Link href="/ipos" className="hover:text-emerald-600 transition-colors">IPOs</Link>
             <span className="mx-2">/</span>
-            <span className="text-gray-900 font-medium">{basicData.name}</span>
+            <span className="text-gray-900 font-medium">{basicData?.name}</span>
           </div>
 
           {/* Hero Content */}
@@ -171,16 +169,16 @@ function IpoDetailPageClient({
                 <div className="flex items-start justify-between">
                   <div>
                     <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 leading-tight mb-2">
-                      {basicData.name}
+                      {basicData?.name}
                     </h1>
                     <p className="text-lg text-gray-600">
-                      {basicData.year && `${basicData.year} • `}
+                      {basicData?.year && `${basicData.year} • `}
                       {keyMetrics.priceRange && `Price: ${keyMetrics.priceRange}`}
                     </p>
                   </div>
-                  <Badge className={`${getStatusColor(basicData.status)} px-3 py-1 text-sm font-medium flex items-center gap-2`}>
-                    {getStatusIcon(basicData.status)}
-                    {basicData.status}
+                  <Badge className={`${getStatusColor(basicData?.status || '')} px-3 py-1 text-sm font-medium flex items-center gap-2`}>
+                    {getStatusIcon(basicData?.status || '')}
+                    {basicData?.status}
                   </Badge>
                 </div>
               </div>
@@ -247,7 +245,7 @@ function IpoDetailPageClient({
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id as any)}
+                      onClick={() => setActiveTab(tab.id as 'overview' | 'financials' | 'timeline' | 'documents')}
                       className={`${
                         activeTab === tab.id
                           ? 'border-emerald-500 text-emerald-600'
@@ -306,10 +304,10 @@ function OverviewTab({ detailData }: { detailData: IpoDetailData | null }) {
           <h4 className="text-md font-semibold text-gray-900 mb-3">IPO Details</h4>
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {detailData.ipo_details.map((detail: any, index: number) => (
+              {detailData.ipo_details.map((detail: [string, string], index: number) => (
                 <div key={`detail-${index}`} className="flex justify-between py-2 border-b border-gray-200 last:border-b-0">
-                  <span className="text-sm text-gray-600">{(detail as any)[0]}</span>
-                  <span className="text-sm font-medium text-gray-900">{(detail as any)[1]}</span>
+                  <span className="text-sm text-gray-600">{detail[0]}</span>
+                  <span className="text-sm font-medium text-gray-900">{detail[1]}</span>
                 </div>
               ))}
             </div>

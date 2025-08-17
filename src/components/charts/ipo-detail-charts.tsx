@@ -8,8 +8,6 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
@@ -21,6 +19,33 @@ import {
   RadialBar,
 } from "recharts";
 import { IpoDetailData } from "@/config/api";
+
+// Chart data interfaces
+interface ChartDataItem {
+  name: string;
+  value: number;
+  color?: string;
+}
+
+interface EPSDataItem {
+  period: string;
+  value: number;
+  year: string;
+}
+
+interface TimelineDataItem {
+  event: string;
+  fullEvent: string;
+  date: string;
+  order: number;
+}
+
+interface PromoterDataItem {
+  name: string;
+  fullName: string;
+  value: number;
+  percentage: number;
+}
 
 interface IpoDetailChartsProps {
   detailData: IpoDetailData | null;
@@ -39,7 +64,7 @@ const CHART_COLORS = [
 
 export default function IpoDetailCharts({ detailData }: IpoDetailChartsProps) {
   // Process KPI data for charts
-  const processKPIData = (kpiData: any[]) => {
+  const processKPIData = (kpiData: Array<{KPI: string; Values: string}>): ChartDataItem[] => {
     if (!kpiData || kpiData.length === 0) return [];
     return kpiData.map((item, index) => ({
       name: item.KPI,
@@ -49,10 +74,10 @@ export default function IpoDetailCharts({ detailData }: IpoDetailChartsProps) {
   };
 
   // Process EPS data for trend analysis
-  const processEPSData = (epsData: any[]) => {
+  const processEPSData = (epsData: Array<Record<string, string>>): EPSDataItem[] => {
     if (!epsData || epsData.length === 0) return [];
     
-    const processedEpsData: any[] = [];
+    const processedEpsData: EPSDataItem[] = [];
     epsData.forEach((eps, index) => {
       Object.entries(eps).forEach(([key, value]) => {
         if (key !== "" && key !== "S.No." && value && typeof value === 'string') {
@@ -71,10 +96,10 @@ export default function IpoDetailCharts({ detailData }: IpoDetailChartsProps) {
   };
 
   // Process reservation data for pie chart
-  const processReservationData = (reservationData: any[]) => {
+  const processReservationData = (reservationData: Array<Record<string, string>>): ChartDataItem[] => {
     if (!reservationData || reservationData.length === 0) return [];
     
-    const processedReservationData: any[] = [];
+    const processedReservationData: ChartDataItem[] = [];
     reservationData.forEach((reservation) => {
       Object.entries(reservation).forEach(([key, value]) => {
         if (key !== "" && key !== "S.No." && value && typeof value === 'string') {
@@ -92,7 +117,7 @@ export default function IpoDetailCharts({ detailData }: IpoDetailChartsProps) {
   };
 
   // Process timeline data for timeline chart
-  const processTimelineData = (timelineData: any[]) => {
+  const processTimelineData = (timelineData: Array<[string, string]>): TimelineDataItem[] => {
     if (!timelineData || timelineData.length === 0) return [];
     return timelineData.map(([event, date], index) => ({
       event: event.length > 20 ? event.substring(0, 20) + '...' : event,
@@ -103,11 +128,11 @@ export default function IpoDetailCharts({ detailData }: IpoDetailChartsProps) {
   };
 
   // Process promoter holdings data
-  const processPromoterData = (promoters: any[], promoterHoldings: any[]) => {
+  const processPromoterData = (promoters: Array<Record<string, string>>, promoterHoldings: Array<[string, string]>): PromoterDataItem[] => {
     if (!promoters?.length && !promoterHoldings?.length) return [];
     
     // Combine promoter data with holdings if available
-    const combinedData = promoters?.map((promoter: any, index: number) => {
+    const combinedData = promoters?.map((promoter: Record<string, string>, index: number) => {
       const holding = promoterHoldings?.[index];
       const promoterName = Object.values(promoter)[0] as string || `Promoter ${index + 1}`;
       const holdingValue = holding ? parseFloat(Object.values(holding)[0] as string) || 0 : 0;
@@ -180,9 +205,7 @@ export default function IpoDetailCharts({ detailData }: IpoDetailChartsProps) {
                    dataKey="value" 
                    fill="#3B82F6" 
                    radius={[6, 6, 0, 0]}
-                   onMouseEnter={(data, index) => {
-                     // Add hover effect
-                   }}
+                   // onMouseEnter handler can be added for hover effects
                  />
               </BarChart>
             </ResponsiveContainer>
@@ -262,10 +285,10 @@ export default function IpoDetailCharts({ detailData }: IpoDetailChartsProps) {
                     cx="50%" 
                     cy="50%" 
                     outerRadius={80} 
-                    label={({ name, percent }) => `${((percent || 0) * 100).toFixed(1)}%`}
+                    label={({ percent }) => `${((percent || 0) * 100).toFixed(1)}%`}
                      labelLine={false}
                   >
-                    {reservationData.map((entry: any, index: number) => (
+                    {reservationData.map((entry: ChartDataItem, index: number) => (
                        <Cell 
                          key={`cell-${index}`} 
                          fill={CHART_COLORS[index % CHART_COLORS.length]}
@@ -298,7 +321,7 @@ export default function IpoDetailCharts({ detailData }: IpoDetailChartsProps) {
                       border: '1px solid #e5e7eb', 
                       borderRadius: '8px' 
                     }}
-                    formatter={(value, name, props) => [
+                    formatter={(value, _name, props) => [
                       `${value}%`,
                       props.payload.fullName
                     ]}
@@ -333,7 +356,7 @@ export default function IpoDetailCharts({ detailData }: IpoDetailChartsProps) {
                     border: '1px solid #e5e7eb', 
                     borderRadius: '8px' 
                   }}
-                  formatter={(value, name, props) => [
+                  formatter={(value, _name, props) => [
                     props.payload.date,
                     props.payload.fullEvent
                   ]}

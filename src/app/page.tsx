@@ -2,13 +2,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Footer } from "@/components/footer";
-import { apiUtils, IpoStatistics, IpoData, IpoDetailData, ListingGainsResponse, IpoListingGain } from "@/config/api";
-import { Search, TrendingUp, Calendar, Clock, CheckCircle, ArrowRight } from "lucide-react";
+import { apiUtils, IpoStatistics, IpoData, ListingGainsResponse, IpoListingGain } from "@/config/api";
+import { Search, TrendingUp, Calendar, CheckCircle } from "lucide-react";
 
 
 
 export default function HomePage() {
-  const [searchQuery, setSearchQuery] = useState("");
+  // const [searchQuery] = useState(""); // Search functionality to be implemented when needed
   const [ipoData, setIpoData] = useState<IpoStatistics | null>(null);
   const [listingGainsData, setListingGainsData] = useState<ListingGainsResponse | null>(null);
   const [lowestGainsData, setLowestGainsData] = useState<ListingGainsResponse | null>(null);
@@ -45,83 +45,41 @@ export default function HomePage() {
     fetchIPOData();
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      // Navigate to search results or handle search
-      console.log('Searching for:', searchQuery);
-    }
-  };
+  // Search functionality to be implemented
+  // const handleSearch = (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (searchQuery.trim()) {
+  //     console.log('Searching for:', searchQuery);
+  //   }
+  // };
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'upcoming': return 'bg-blue-100 text-blue-800';
-      case 'open': return 'bg-green-100 text-green-800';
-      case 'closed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // Status color utility - to be used when implementing status badges
+  // const getStatusColor = (status: string) => {
+  //   switch (status.toLowerCase()) {
+  //     case 'upcoming': return 'bg-blue-100 text-blue-800';
+  //     case 'open': return 'bg-green-100 text-green-800';
+  //     case 'closed': return 'bg-gray-100 text-gray-800';
+  //     default: return 'bg-gray-100 text-gray-800';
+  //   }
+  // };
 
-  const extractIpoInfo = (details: IpoDetailData | undefined) => {
-    if (!details) return {};
-    
-    const info: Record<string, string> = {};
-    
-    // Extract lot size
-    if (details.lots && details.lots.length > 0) {
-      const lotInfo = details.lots.find(lot => 
-        Object.keys(lot).some(key => key.toLowerCase().includes('lot'))
-      );
-      if (lotInfo) {
-        const lotKey = Object.keys(lotInfo).find(key => key.toLowerCase().includes('lot'));
-        if (lotKey) info.lotSize = lotInfo[lotKey];
-      }
-    }
-    
-    // Extract face value from ipo_price (tuple array)
-    if (details.ipo_price && details.ipo_price.length > 0) {
-      const priceInfo = details.ipo_price.find(([key]) => 
-        key.toLowerCase().includes('face') || key.toLowerCase().includes('value')
-      );
-      if (priceInfo) {
-        info.faceValue = priceInfo[1];
-      }
-    }
-    
-    // Extract price range from ipo_price (tuple array)
-    if (details.ipo_price && details.ipo_price.length > 0) {
-      const priceInfo = details.ipo_price.find(([key]) => 
-        key.toLowerCase().includes('price') || key.toLowerCase().includes('range')
-      );
-      if (priceInfo) {
-        info.priceRange = priceInfo[1];
-      }
-    }
-    
-    // Extract timeline dates
-    if (details.timeline && details.timeline.length > 0) {
-      const openDate = details.timeline.find(([event]) => 
-        event.toLowerCase().includes('open') || event.toLowerCase().includes('start')
-      );
-      const closeDate = details.timeline.find(([event]) => 
-        event.toLowerCase().includes('close') || event.toLowerCase().includes('end')
-      );
-      
-      if (openDate) info.openDate = openDate[1];
-      if (closeDate) info.closeDate = closeDate[1];
-    }
-    
-    return info;
-  };
+  // IPO info extraction utility - to be used when displaying IPO cards
+  // const extractIpoInfo = (details: IpoDetailData | undefined) => {
+  //   if (!details) return {};
+  //   const info: Record<string, string> = {};
+  //   // Extract lot size, face value, price range, timeline dates...
+  //   return info;
+  // };
 
-  const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'upcoming': return <Calendar className="w-4 h-4" />;
-      case 'open': return <Clock className="w-4 h-4" />;
-      case 'closed': return <CheckCircle className="w-4 h-4" />;
-      default: return <Calendar className="w-4 h-4" />;
-    }
-  };
+  // Status icon utility - to be used when implementing status indicators
+  // const getStatusIcon = (status: string) => {
+  //   switch (status.toLowerCase()) {
+  //     case 'upcoming': return <Calendar className="w-4 h-4" />;
+  //     case 'open': return <Clock className="w-4 h-4" />;
+  //     case 'closed': return <CheckCircle className="w-4 h-4" />;
+  //     default: return <Calendar className="w-4 h-4" />;
+  //   }
+  // };
 
   const getIposByStatus = (status: string) => {
     if (!ipoData?.by_status) return [];
