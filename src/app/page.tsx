@@ -715,7 +715,6 @@ export default function HomePage() {
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issue Price</th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Listing Price</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gain %</th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Listing Date</th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exchange</th>
                     </tr>
@@ -724,7 +723,7 @@ export default function HomePage() {
                     {activeTab === 'top' ? (
                       !listingGainsData || listingGainsData.ipos.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="px-6 py-12 text-center">
+                          <td colSpan={5} className="px-6 py-12 text-center">
                             <div className="w-16 h-16 bg-gray-100 rounded-lg mx-auto mb-4 flex items-center justify-center">
                               <TrendingUp className="w-8 h-8 text-gray-300" />
                             </div>
@@ -742,22 +741,22 @@ export default function HomePage() {
                           return (
                             <tr key={index} className="hover:bg-gray-50 transition-colors">
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <Link href={`/ipo/${ipo.slug}`} className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
-                                  {ipo.name}
-                                </Link>
+                                <div className="flex items-center gap-3">
+                                  <Link href={`/ipo/${ipo.slug}`} className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
+                                    {ipo.name}
+                                  </Link>
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    isPositive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                  }`}>
+                                    {isPositive ? '+' : ''}{ipo.listing_gain_percent}
+                                  </span>
+                                </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                                 ₹{issuePrice.toFixed(0)}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                                 ₹{listingPrice.toFixed(0)}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  isPositive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                }`}>
-                                  {isPositive ? '+' : ''}{ipo.listing_gain_percent}
-                                </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                 {ipo.listing_date}
@@ -773,7 +772,7 @@ export default function HomePage() {
                     ) : (
                       !lowestGainsData || lowestGainsData.ipos.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="px-6 py-12 text-center">
+                          <td colSpan={5} className="px-6 py-12 text-center">
                             <div className="w-16 h-16 bg-gray-100 rounded-lg mx-auto mb-4 flex items-center justify-center">
                               <TrendingUp className="w-8 h-8 text-gray-300" />
                             </div>
@@ -791,22 +790,22 @@ export default function HomePage() {
                           return (
                             <tr key={index} className="hover:bg-gray-50 transition-colors">
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <Link href={`/ipo/${ipo.slug}`} className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
-                                  {ipo.name}
-                                </Link>
+                                <div className="flex items-center gap-3">
+                                  <Link href={`/ipo/${ipo.slug}`} className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
+                                    {ipo.name}
+                                  </Link>
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    isPositive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                  }`}>
+                                    {isPositive ? '+' : ''}{ipo.listing_gain_percent}
+                                  </span>
+                                </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                                 ₹{issuePrice.toFixed(0)}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                                 ₹{listingPrice.toFixed(0)}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  isPositive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                }`}>
-                                  {isPositive ? '+' : ''}{ipo.listing_gain_percent}
-                                </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                 {ipo.listing_date}
