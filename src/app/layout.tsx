@@ -4,6 +4,7 @@ import "./globals.css";
 import { Header } from "@/components/header";
 // import { Footer } from "@/components/footer"; // Footer component available for future use
 import type { Viewport } from "next";
+import { SEO_CONFIG } from "@/config/seo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,10 +16,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "IPOHut",
-  description: "All things IPOs in one place.",
-};
+export const metadata: Metadata = SEO_CONFIG.default;
 
 export const viewport: Viewport = {
   width: "device-width",

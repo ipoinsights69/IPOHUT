@@ -83,12 +83,6 @@ export default function IpoDetailClient({
   const keyMetrics = extractKeyMetrics(detailData);
 
 
-  interface TabDef { 
-  id: TabId; 
-  label: string; 
-  icon: React.ReactNode 
-}
-
 type TabId = "overview" | "financials" | "timeline" | "documents";
 
 const tabs: { id: TabId; label: string; icon:  React.ReactNode  }[] = [

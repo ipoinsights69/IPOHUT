@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { apiUtils } from "@/config/api";
+import { SEO_CONFIG } from "@/config/seo";
 
-export const revalidate = 60; // ISR: revalidate every 60 seconds
+export const revalidate = 60; // REVALIDATE_PAGES.ipoList
+export const metadata = SEO_CONFIG.pages.ipoList;
 
 export default async function IposPage() {
   const ipos = await apiUtils.fetchAllIpos();

@@ -1,8 +1,10 @@
 import { HomePageClient } from "@/components/homepage-client";
 import { apiUtils } from "@/config/api";
+import { SEO_CONFIG } from "@/config/seo";
 
 // Server Component: ISR-enabled homepage
-export const revalidate = 14400;
+export const revalidate = 14400; // REVALIDATE_PAGES.homepage (4 hours)
+export const metadata = SEO_CONFIG.pages.homepage;
 
 export default async function HomePage() {
   const [statisticsData, listingGainsData, lowestGainsData] = await Promise.all([
