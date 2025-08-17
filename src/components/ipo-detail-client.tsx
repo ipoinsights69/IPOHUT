@@ -47,12 +47,17 @@ function extractKeyMetrics(data: IpoDetailData | null) {
       }
     });
   }
+  type LotInfo = {
+  Shares?: string;
+  Amount?: string;
+};
 
-  if (data.lots && Array.isArray(data.lots) && data.lots.length > 0) {
-    const lotInfo = data.lots[0] as any;
-    if (lotInfo.Shares) metrics.lotSize = lotInfo.Shares;
-    if (lotInfo.Amount) metrics.amount = lotInfo.Amount;
-  }
+if (data.lots && Array.isArray(data.lots) && data.lots.length > 0) {
+  const lotInfo = data.lots[0] as LotInfo;
+  if (lotInfo.Shares) metrics.lotSize = lotInfo.Shares;
+  if (lotInfo.Amount) metrics.amount = lotInfo.Amount;
+}
+
 
   if (data.timeline && Array.isArray(data.timeline)) {
     const openDate = data.timeline.find(([key]) => key.toLowerCase().includes("open"))?.[1];
@@ -77,12 +82,22 @@ export default function IpoDetailClient({
   const [activeTab, setActiveTab] = useState<"overview" | "financials" | "timeline" | "documents">("overview");
   const keyMetrics = extractKeyMetrics(detailData);
 
-  const tabs = [
-    { id: "overview", label: "Overview", icon: <Building2 className="w-4 h-4" /> },
-    { id: "financials", label: "Financials", icon: <BarChart3 className="w-4 h-4" /> },
-    { id: "timeline", label: "Timeline", icon: <Calendar className="w-4 h-4" /> },
-    { id: "documents", label: "Documents", icon: <FileText className="w-4 h-4" /> },
-  ];
+
+  interface TabDef { 
+  id: TabId; 
+  label: string; 
+  icon: React.ReactNode 
+}
+
+type TabId = "overview" | "financials" | "timeline" | "documents";
+
+const tabs: { id: TabId; label: string; icon:  React.ReactNode  }[] = [
+  { id: "overview", label: "Overview", icon: <Building2 className="w-4 h-4" /> },
+  { id: "financials", label: "Financials", icon: <BarChart3 className="w-4 h-4" /> },
+  { id: "timeline", label: "Timeline", icon: <Calendar className="w-4 h-4" /> },
+  { id: "documents", label: "Documents", icon: <FileText className="w-4 h-4" /> },
+];
+
 
   return (
     <main className="min-h-screen bg-gray-50 pt-16">
@@ -187,7 +202,7 @@ export default function IpoDetailClient({
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id as any)}
+onClick={() => setActiveTab(tab.id)}      // ✅
                       className={`${
                         activeTab === tab.id
                           ? "border-emerald-500 text-emerald-600"

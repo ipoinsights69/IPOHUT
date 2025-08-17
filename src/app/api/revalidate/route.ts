@@ -31,24 +31,26 @@ function parsePathsFromSearchParams(sp: URLSearchParams): string[] {
   // Dedupe
   return Array.from(new Set(collected));
 }
-
-function parsePathsFromBody(body: any): string[] {
-  if (!body) return [];
+function parsePathsFromBody(
+  body: unknown
+): string[] {
+  if (!body || typeof body !== "object") return [];
   const collected: string[] = [];
 
-  if (Array.isArray(body.paths)) {
-    collected.push(...body.paths.map((p: string) => normalizePath(String(p))));
+  const b = body as Record<string, unknown>;
+
+  if (Array.isArray(b.paths)) {
+    collected.push(...b.paths.map((p) => normalizePath(String(p))));
   }
 
-  if (typeof body.path === 'string') {
-    collected.push(...parseCommaSeparated(body.path));
+  if (typeof b.path === "string") {
+    collected.push(...parseCommaSeparated(b.path));
   }
 
-  if (typeof body.paths === 'string') {
-    collected.push(...parseCommaSeparated(body.paths));
+  if (typeof b.paths === "string") {
+    collected.push(...parseCommaSeparated(b.paths));
   }
 
-  // Dedupe
   return Array.from(new Set(collected));
 }
 
@@ -90,9 +92,9 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({ revalidated: true, mode: 'path', paths, type });
-  } catch (err: any) {
-    return NextResponse.json({ revalidated: false, error: err?.message || 'Unknown error' }, { status: 500 });
-  }
+  } catch (err: unknown) {
+  return NextResponse.json({ revalidated: false, error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
+}
 }
 
 export async function POST(req: Request) {
@@ -124,7 +126,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ revalidated: true, mode: 'path', paths, type });
-  } catch (err: any) {
-    return NextResponse.json({ revalidated: false, error: err?.message || 'Unknown error' }, { status: 500 });
-  }
+  } catch (err: unknown) {
+  return NextResponse.json({ revalidated: false, error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
+}
 }
