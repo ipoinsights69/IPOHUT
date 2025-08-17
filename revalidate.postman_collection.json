@@ -1,0 +1,118 @@
+{
+  "info": {
+    "_postman_id": "c7b6d2c9-0f15-4a6e-9d8c-3b58d8f1f001",
+    "name": "IPO Hut - On-demand Revalidation",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Use this collection to trigger Next.js on-demand revalidation for specific paths or tags."
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "secret", "value": "change-me-please" }
+  ],
+  "item": [
+    {
+      "name": "Revalidate Homepage (GET /api/revalidate?path=/)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/revalidate?secret={{secret}}&path=/",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "revalidate"],
+          "query": [
+            { "key": "secret", "value": "{{secret}}" },
+            { "key": "path", "value": "/" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Revalidate Multiple Paths (GET)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/revalidate?secret={{secret}}&paths=/,/ipos,/ipo/some-slug",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "revalidate"],
+          "query": [
+            { "key": "secret", "value": "{{secret}}" },
+            { "key": "paths", "value": "/,/ipos,/ipo/some-slug" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Revalidate via Tag (GET)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/revalidate?secret={{secret}}&tag=homepage",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "revalidate"],
+          "query": [
+            { "key": "secret", "value": "{{secret}}" },
+            { "key": "tag", "value": "homepage" }
+          ]
+        }
+      },
+      "description": "Works after you add fetch tags to your server fetches."
+    },
+    {
+      "name": "Revalidate Paths (POST)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"secret\": \"{{secret}}\",\n  \"paths\": [\"/\", \"/ipos\", \"/ipo/some-slug\"]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/revalidate",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "revalidate"]
+        }
+      }
+    },
+    {
+      "name": "Revalidate Tag (POST)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"secret\": \"{{secret}}\",\n  \"tag\": \"homepage\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/revalidate",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "revalidate"]
+        }
+      },
+      "description": "Works after you add fetch tags to your server fetches."
+    },
+    {
+      "name": "Revalidate with Layout Type (GET)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/revalidate?secret={{secret}}&path=/&type=layout",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "revalidate"],
+          "query": [
+            { "key": "secret", "value": "{{secret}}" },
+            { "key": "path", "value": "/" },
+            { "key": "type", "value": "layout" }
+          ]
+        }
+      },
+      "description": "Use type=layout if you need to revalidate a layout segment." 
+    }
+  ]
+}
