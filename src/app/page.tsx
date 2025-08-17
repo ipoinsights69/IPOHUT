@@ -301,85 +301,188 @@ export default function HomePage() {
 
   return (
     <>
-    <main className="min-h-screen bg-white pt-16">
-      {/* Header Section */}
-      <section className="border-b border-gray-100">
-        <div className="container mx-auto max-w-7xl px-6 py-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
-            {/* Title & Description */}
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-gray-600 uppercase tracking-wide">Live Market Data</span>
-              </div>
-              <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-3 tracking-tight">
-                IPO Market Intelligence
-              </h1>
-              <p className="text-lg text-gray-600 max-w-2xl">
-                Real-time IPO data, comprehensive analysis, and market insights for informed investment decisions
-              </p>
-            </div>
-            
-            {/* Search Bar */}
-            <div className="flex-shrink-0 w-full lg:w-96">
-              <form onSubmit={handleSearch}>
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search IPOs, companies..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-gray-50 text-gray-900 placeholder-gray-500 transition-all"
-                  />
+    <main className="min-h-screen bg-gray-50 pt-16">
+      {/* Hero Section */}
+      <section className="bg-white">
+        <div className="container mx-auto max-w-7xl px-6 py-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
+            <div className="space-y-8">
+              {/* Header */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
+                  <span className="text-sm font-medium text-emerald-600 uppercase tracking-wide">IPO Intelligence Platform</span>
                 </div>
-              </form>
-            </div>
-          </div>
+                <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
+                  Track IPOs <span className="text-emerald-600">Smarter</span>
+                </h1>
+                <p className="text-lg text-gray-600 leading-relaxed">
+                  Real-time IPO data, GMP tracking, allotment checker, and expert insights for informed investment decisions.
+                </p>
+              </div>
 
-          {/* Market Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-            <div className="bg-gray-50 border border-gray-100 rounded-lg p-6 hover:shadow-sm transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-bold text-gray-900 mb-1">
-                    {ipoData?.by_status?.Upcoming?.count || 0}
+              {/* Feature Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="w-4 h-4 text-emerald-600" />
                   </div>
-                  <div className="text-sm font-medium text-gray-600">Upcoming IPOs</div>
-                  <div className="text-xs text-gray-500 mt-1">Scheduled for launch</div>
+                  <div>
+                    <h3 className="font-medium text-gray-900 text-sm">Live GMP</h3>
+                    <p className="text-xs text-gray-600 mt-1">Real-time grey market premium tracking</p>
+                  </div>
                 </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <div className="w-6 h-6 bg-blue-600 rounded-sm"></div>
+                <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900 text-sm">Allotment Status</h3>
+                    <p className="text-xs text-gray-600 mt-1">Instant allotment verification</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Calendar className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900 text-sm">IPO Calendar</h3>
+                    <p className="text-xs text-gray-600 mt-1">Complete upcoming IPO schedule</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Search className="w-4 h-4 text-orange-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900 text-sm">Expert Analysis</h3>
+                    <p className="text-xs text-gray-600 mt-1">Professional investment insights</p>
+                  </div>
                 </div>
               </div>
+
+              {/* Stats */}
+              {/* <div className="flex items-center gap-8 pt-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">2,500+</div>
+                  <div className="text-sm text-gray-600">IPOs Tracked</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">50K+</div>
+                  <div className="text-sm text-gray-600">Active Users</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">99.2%</div>
+                  <div className="text-sm text-gray-600">Accuracy</div>
+                </div>
+              </div> */}
             </div>
-            <div className="bg-gray-50 border border-gray-100 rounded-lg p-6 hover:shadow-sm transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-bold text-gray-900 mb-1">
-                    {ipoData?.by_status?.Open?.count || 0}
-                  </div>
-                  <div className="text-sm font-medium text-gray-600">Open for Subscription</div>
-                  <div className="text-xs text-gray-500 mt-1">Currently accepting applications</div>
-                </div>
-                <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                  <div className="w-6 h-6 bg-emerald-600 rounded-sm"></div>
+
+            {/* Right Content - Live Dashboard */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+              {/* Dashboard Header */}
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">Live IPO Dashboard</h3>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm text-emerald-600 font-medium">Live</span>
                 </div>
               </div>
-            </div>
-            <div className="bg-gray-50 border border-gray-100 rounded-lg p-6 hover:shadow-sm transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-bold text-gray-900 mb-1">
-                    {ipoData?.by_status?.Closed?.count || 0}
+
+              {/* Live IPO Cards */}
+              <div className="space-y-4">
+                {loading ? (
+                  <div className="space-y-4">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="animate-pulse">
+                        <div className="h-20 bg-gray-100 rounded-lg"></div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="text-sm font-medium text-gray-600">Recently Closed</div>
-                  <div className="text-xs text-gray-500 mt-1">Subscription ended</div>
-                </div>
-                <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                  <div className="w-6 h-6 bg-gray-600 rounded-sm"></div>
-                </div>
+                ) : (
+                  <>
+                    {/* Active IPO */}
+                     {getIposByStatus('open').slice(0, 1).map((ipo, index) => {
+                        const metrics = extractIpoMetrics(ipo);
+                        return (
+                          <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gradient-to-r from-emerald-50 to-white">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-gray-900 text-sm line-clamp-1">{ipo.name}</h4>
+                                <p className="text-xs text-gray-600">Open for Subscription</p>
+                              </div>
+                              <span className="bg-emerald-100 text-emerald-700 text-xs font-medium px-2 py-1 rounded-md">Active</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4 text-center">
+                              <div>
+                                <div className="text-sm font-semibold text-gray-900">{metrics.priceBand}</div>
+                                <div className="text-xs text-gray-500">Price Band</div>
+                              </div>
+                              <div>
+                                <div className="text-sm font-semibold text-emerald-600">{metrics.openDateFormatted}</div>
+                                <div className="text-xs text-gray-500">Open Date</div>
+                              </div>
+                              <div>
+                                <div className="text-sm font-semibold text-blue-600">{metrics.closeDateFormatted}</div>
+                                <div className="text-xs text-gray-500">Close Date</div>
+                              </div>
+                            </div>
+                            <div className="mt-3">
+                              <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                <div className="bg-emerald-500 h-1.5 rounded-full" style={{width: '60%'}}></div>
+                              </div>
+                              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>Duration: {metrics.duration}</span>
+                                <span>Issue Size: {metrics.issueSize}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                    {/* Upcoming IPO */}
+                     {getIposByStatus('upcoming').slice(0, 1).map((ipo, index) => {
+                        const metrics = extractIpoMetrics(ipo);
+                        return (
+                          <div key={index} className="border border-gray-200 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-gray-900 text-sm line-clamp-1">{ipo.name}</h4>
+                                <p className="text-xs text-gray-600">Scheduled Launch</p>
+                              </div>
+                              <span className="bg-orange-100 text-orange-700 text-xs font-medium px-2 py-1 rounded-md">Upcoming</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4 text-center">
+                              <div>
+                                <div className="text-sm font-semibold text-gray-900">{metrics.priceBand}</div>
+                                <div className="text-xs text-gray-500">Price Band</div>
+                              </div>
+                              <div>
+                                <div className="text-sm font-semibold text-purple-600">{metrics.openDateFormatted}</div>
+                                <div className="text-xs text-gray-500">Open Date</div>
+                              </div>
+                              <div>
+                                <div className="text-sm font-semibold text-gray-600">{metrics.issueSize}</div>
+                                <div className="text-xs text-gray-500">Issue Size</div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </>
+                )}
               </div>
+
+              {/* Dashboard Footer */}
+              {/* <div className="mt-6 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">Updated 2 minutes ago</span>
+                  <Link href="/ipos" className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1">
+                    View All <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div> */}
             </div>
           </div>
         </div>
