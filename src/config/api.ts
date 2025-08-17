@@ -1,12 +1,15 @@
 export const API_CONFIG = {
-  baseUrl: 'http://159.65.104.132:1234',
+  // baseUrl: 'http://159.65.104.132:1234',
+  baseUrl: 'http://127.0.0.1:1234',
+
   endpoints: {
     // IPO endpoints
     allIpos: '/api/ipo/all',
     upcoming: '/api/ipo/upcoming',
     closed: '/api/ipo/closed',
     search: '/api/ipo/search',
-    getIpoBySlug: (slug: string) => `/api/ipo/${slug}`,
+    getIpoDetails: (slug: string) => `/api/ipo/details/${slug}`,
+    getIpoStatistics: '/api/ipo/statistics',
   }
 } as const;
 
@@ -18,12 +21,62 @@ export interface IpoData {
   status: string;
   url: string;
   year: number;
+  ipo_details?: Array<Record<string, string>>;
+  timeline?: Array<[string, string]>;
+}
+
+export interface IpoDetailData {
+  about_company: {
+    description: string;
+    competitive_strengths: string[];
+  };
+  company_name: string;
+  EPS: Array<Record<string, string>>;
+  KPI: Array<{KPI: string; Values: string}>;
+  ipo_details: Array<Record<string, string>>;
+  ipo_price: Array<Record<string, string>>;
+  lots: Array<Record<string, string>>;
+  objectives: Array<Record<string, string>>;
+  promoters: string;
+  promoters_holdings: Array<[string, string]>;
+  prospectus_links: Array<{href: string; text: string; title: string}>;
+  reservation: Array<Record<string, string>>;
+  review: Array<Record<string, string>>;
+  status: string;
+  timeline: Array<[string, string]>;
 }
 
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
+}
+
+export interface IpoStatistics {
+  by_status: {
+    Open: {
+      count: number;
+      ipos: IpoData[] | null;
+    };
+    Upcoming: {
+      count: number;
+      ipos: IpoData[] | null;
+    };
+    Closed: {
+      count: number;
+      ipos: IpoData[] | null;
+    };
+    Unknown?: {
+      count: number;
+      ipos: IpoData[] | null;
+    };
+  };
+  by_year: Record<string, {
+    count: number;
+    ipos: IpoData[] | null;
+  }>;
+  by_industry?: Record<string, number>;
+  by_listing_type?: Record<string, number>;
 }
 
 // API utility functions
@@ -41,6 +94,25 @@ export const apiUtils = {
       return [];
     }
   },
+  
+  async fetchIpoStatistics(includeDetails: boolean = true, limit: number = 10): Promise<IpoStatistics | null> {
+    try {
+      const url = new URL(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.getIpoStatistics}`);
+      url.searchParams.append('include_details', includeDetails.toString());
+      url.searchParams.append('limit', limit.toString());
+      
+      const response = await fetch(url.toString());
+      console.log(response)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching IPO statistics:', error);
+      return null;
+    }
+  },
 
   async fetchIpoBySlug(slug: string): Promise<IpoData | null> {
     try {
@@ -48,6 +120,20 @@ export const apiUtils = {
       return allIpos.find(ipo => ipo.slug === slug) || null;
     } catch (error) {
       console.error(`Error fetching IPO with slug ${slug}:`, error);
+      return null;
+    }
+  },
+  
+  async fetchIpoDetails(slug: string): Promise<IpoDetailData | null> {
+    try {
+      const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.getIpoDetails(slug)}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error(`Error fetching IPO details with slug ${slug}:`, error);
       return null;
     }
   },
