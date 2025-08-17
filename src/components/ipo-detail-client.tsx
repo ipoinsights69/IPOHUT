@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { IpoDetailData, IpoData } from "@/config/api";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, CheckCircle, TrendingUp, ArrowRight, FileText, Users, BarChart3, Target, Building2 } from "lucide-react";
+import { Calendar, Clock, CheckCircle, TrendingUp, ArrowRight, FileText, Users, BarChart3, Target, Building2, Sparkles } from "lucide-react";
 
 function getStatusColor(status: string) {
   switch ((status || "").toLowerCase()) {
@@ -162,6 +162,7 @@ const tabs: { id: TabId; label: string; icon:  React.ReactNode  }[] = [
                 )}
               </div>
             </div>
+            
 
             {/* Right: Quick Actions */}
             <div className="space-y-4">
@@ -178,6 +179,7 @@ const tabs: { id: TabId; label: string; icon:  React.ReactNode  }[] = [
                   </button>
                 </div>
               </div>
+
             </div>
           </div>
         </div>
@@ -393,6 +395,63 @@ function DocumentsTab({ detailData }: { detailData: IpoDetailData | null }) {
 function SidebarWidgets({ detailData, keyMetrics }: { detailData: IpoDetailData | null; keyMetrics: Record<string, string> }) {
   return (
     <>
+      {detailData?.recommendation && (
+        <div className="w-full bg-gray-900 text-white rounded-xl p-4 shadow-2xl border border-gray-800/60 transition-all hover:shadow-xl hover:-translate-y-0.5">
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className={`${
+              detailData.recommendation.recommendation === 'SUBSCRIBE'
+                ? 'bg-green-500'
+                : detailData.recommendation.recommendation === 'AVOID'
+                ? 'bg-red-500'
+                : 'bg-amber-500'
+            } w-8 h-8 rounded-full flex items-center justify-center`}>
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <div className="font-semibold text-sm">Internal AI Analysis</div>
+            </div>
+          </div>
+
+          {/* Recommendation */}
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-400">Confidence</span>
+              <div className={`${
+                detailData.recommendation.confidence === 'HIGH'
+                  ? 'bg-green-900 text-green-200'
+                  : detailData.recommendation.confidence === 'LOW'
+                  ? 'bg-red-900 text-red-200'
+                  : 'bg-amber-900 text-amber-200'
+              } px-2 py-1 rounded-full text-xs font-medium`}>
+                {detailData.recommendation.confidence}
+              </div>
+            </div>
+            <div className={`${
+              detailData.recommendation.recommendation === 'SUBSCRIBE'
+                ? 'text-green-400'
+                : detailData.recommendation.recommendation === 'AVOID'
+                ? 'text-red-400'
+                : 'text-amber-400'
+            } font-bold text-lg`}>
+              {detailData.recommendation.recommendation}
+            </div>
+          </div>
+
+          {/* Disclaimer */}
+          <div className="border-t border-gray-700 pt-3">
+            <div className="flex items-start gap-2">
+              <svg className="w-3 h-3 text-gray-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
+              </svg>
+              <div className="text-xs text-gray-400 leading-relaxed">
+                <span className="font-medium">Disclaimer:</span> AI-generated for informational purposes only. Not financial advice. Consult professionals before investing.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Quick Info Widget */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -451,4 +510,30 @@ function SidebarWidgets({ detailData, keyMetrics }: { detailData: IpoDetailData 
       </div>
     </>
   );
+}
+
+function getRecommendationColor(rec?: string) {
+  switch ((rec || "").toUpperCase()) {
+    case "SUBSCRIBE":
+      return "bg-emerald-50 border-emerald-200 text-emerald-800";
+    case "AVOID":
+      return "bg-red-50 border-red-200 text-red-800";
+    case "NEUTRAL":
+      return "bg-amber-50 border-amber-200 text-amber-800";
+    default:
+      return "bg-gray-50 border-gray-200 text-gray-800";
+  }
+}
+
+function getConfidenceBadge(conf?: string) {
+  switch ((conf || "").toUpperCase()) {
+    case "HIGH":
+      return <span className="text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-700">High confidence</span>;
+    case "MEDIUM":
+      return <span className="text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-700">Medium confidence</span>;
+    case "LOW":
+      return <span className="text-xs px-2 py-0.5 rounded bg-red-100 text-red-700">Low confidence</span>;
+    default:
+      return null;
+  }
 }

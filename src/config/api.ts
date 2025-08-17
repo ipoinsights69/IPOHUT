@@ -45,6 +45,27 @@ export interface IpoDetailData {
   review: Array<Record<string, string>>;
   status: string;
   timeline: Array<[string, string]>;
+  recommendation?: {
+    confidence: "LOW" | "MEDIUM" | "HIGH";
+    details: {
+      broker_score: number;
+      brokers: {
+        avoid: number;
+        neutral: number;
+        subscribe: number;
+      };
+      member_score: number;
+      members: {
+        avoid: number;
+        neutral: number;
+        subscribe: number;
+      };
+      total_reviews: number;
+    };
+    reason: string;
+    recommendation: "AVOID" | "NEUTRAL" | "SUBSCRIBE";
+    score: number;
+  };
 }
 
 export interface ApiResponse<T> {
