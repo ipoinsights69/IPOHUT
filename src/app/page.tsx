@@ -7,10 +7,11 @@ export const revalidate = 14400; // REVALIDATE_PAGES.homepage (4 hours)
 export const metadata = SEO_CONFIG.pages.homepage;
 
 export default async function HomePage() {
-  const [statisticsData, listingGainsData, lowestGainsData] = await Promise.all([
+  const [statisticsData, listingGainsData, lowestGainsData, recentlyListedData] = await Promise.all([
     apiUtils.fetchIpoStatistics(true, 20),
     apiUtils.fetchListingGains(6, "gain_desc"),
     apiUtils.fetchListingGains(6, "gain_asc"),
+    apiUtils.fetchRecentlyListed(8),
   ]);
 
   return (
@@ -18,6 +19,7 @@ export default async function HomePage() {
       ipoData={statisticsData}
       listingGainsData={listingGainsData}
       lowestGainsData={lowestGainsData}
+      recentlyListedData={recentlyListedData}
     />
   );
 }

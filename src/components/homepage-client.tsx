@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { IpoStatistics, IpoData, ListingGainsResponse, IpoListingGain, IpoDetailData } from "@/config/api";
+import { IpoStatistics, IpoData, ListingGainsResponse, IpoListingGain, IpoDetailData, RecentlyListedResponse, RecentlyListedIpo } from "@/config/api";
 import { Search, TrendingUp, Calendar, CheckCircle, Clock } from "lucide-react";
 import { Footer } from "@/components/footer";
 
@@ -9,9 +9,10 @@ interface HomePageClientProps {
   ipoData: IpoStatistics | null;
   listingGainsData: ListingGainsResponse | null;
   lowestGainsData: ListingGainsResponse | null;
+  recentlyListedData?: RecentlyListedResponse | null;
 }
 
-export function HomePageClient({ ipoData, listingGainsData, lowestGainsData }: HomePageClientProps) {
+export function HomePageClient({ ipoData, listingGainsData, lowestGainsData, recentlyListedData }: HomePageClientProps) {
   const [activeTab, setActiveTab] = useState<'top' | 'lowest'>('top');
   const [activeIpoTab, setActiveIpoTab] = useState<'upcoming' | 'open' | 'closed'>('upcoming');
   const loading = false; // Data is already loaded from server
@@ -694,6 +695,114 @@ export function HomePageClient({ ipoData, listingGainsData, lowestGainsData }: H
         </div>
       </section>
 
+      {/* Recently Listed Section */}
+      <section className="py-12 bg-white">
+        <div className="container mx-auto max-w-7xl px-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-1">Recently Listed IPOs</h2>
+              <p className="text-sm text-gray-600">Latest companies that debuted on the exchanges</p>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issue Price</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Listing Price</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Listing Date</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exchange</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {!recentlyListedData || !recentlyListedData.ipos || recentlyListedData.ipos.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center">
+                        <div className="w-16 h-16 bg-gray-100 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                          <TrendingUp className="w-8 h-8 text-gray-300" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No Recently Listed IPOs</h3>
+                        <p className="text-gray-600">There are currently no recently listed IPOs available.</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    recentlyListedData.ipos.slice(0, 8).map((ipo: RecentlyListedIpo, index: number) => {
+                      // Helpers to extract values from varying API shapes
+                      const getNested = (obj: any, path: string) => {
+                        return path.split('.').reduce((acc: any, key: string) => (acc && acc[key] !== undefined ? acc[key] : undefined), obj);
+                      };
+                      const getCandidate = (obj: any, candidates: string[]) => {
+                        for (const key of candidates) {
+                          const val = key.includes('.') ? getNested(obj, key) : (obj as any)[key];
+                          if (val !== undefined && val !== null && val !== '') return val;
+                        }
+                        return undefined;
+                      };
+                      const parseMoney = (val: unknown): number | null => {
+                        if (typeof val === 'number') return isFinite(val) ? val : null;
+                        if (typeof val === 'string') {
+                          const num = parseFloat(val.replace(/[^\d.\-]/g, ''));
+                          return isNaN(num) ? null : num;
+                        }
+                        return null;
+                      };
+
+                      // Try multiple keys for prices
+const issueRaw = getCandidate(ipo as any, [
+  'issue_price', 'issuePrice', 'Issue Price', 'issue', 'Issue',
+  'ipo_details.Issue Price', 'ipo_details.price', 'ipo_details.Price Band'
+]);
+const listingRaw = getCandidate(ipo as any, [
+  'listing_price', 
+  'listingPrice', 
+  'Listing Price', 
+  'listing', 
+  'Listing',
+  'ipo_details.Listing Price', 
+  'ipo_details.listing_rate',
+  'listing_trading.Open'   // 👈 new candidate
+]);
+
+                      const issuePriceNum = parseMoney(issueRaw);
+                      const listingPriceNum = parseMoney(listingRaw);
+
+                      const issueDisplay = issuePriceNum !== null
+                        ? `₹${issuePriceNum.toFixed(0)}`
+                        : (typeof issueRaw === 'string' && issueRaw.trim() !== '' ? issueRaw : '₹—');
+                      const listingDisplay = listingPriceNum !== null
+                        ? `₹${listingPriceNum.toFixed(0)}`
+                        : (typeof listingRaw === 'string' && listingRaw.trim() !== '' ? listingRaw : '₹—');
+
+                      const exchange = getCandidate(ipo as any, [
+                        'exchange', 'listing_at', 'Listing At', 'listing', 'on_exchange', 'listed_at'
+                      ]) ?? '—';
+
+                      return (
+                        <tr key={index} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-3">
+                              <Link href={`/ipo/${ipo.slug}`} className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
+                                {ipo.name}
+                              </Link>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{issueDisplay}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{listingDisplay}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{(ipo as any).listing_date ?? '—'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{exchange}</td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
      
     <Footer />

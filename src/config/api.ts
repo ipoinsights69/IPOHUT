@@ -11,6 +11,7 @@ export const API_CONFIG = {
     getIpoDetails: (slug: string) => `/api/ipo/details/${slug}`,
     getIpoStatistics: '/api/ipo/statistics',
     listingGains: '/api/ipo/listing-gains',
+    recentlyListed: '/api/ipo/recently-listed',
   }
 } as const;
 
@@ -216,5 +217,35 @@ export const apiUtils = {
       console.error('Error fetching listing gains:', error);
       return null;
     }
+  },
+  
+  async fetchRecentlyListed(limit: number = 8): Promise<RecentlyListedResponse | null> {
+    try {
+      const url = new URL(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.recentlyListed}`);
+      url.searchParams.append('limit', limit.toString());
+      const response = await fetch(url.toString());
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching recently listed IPOs:', error);
+      return null;
+    }
   }
 };
+
+export interface RecentlyListedIpo {
+  name: string;
+  slug: string;
+  issue_price: string;
+  listing_price: string;
+  listing_date: string;
+  exchange: string;
+}
+
+export interface RecentlyListedResponse {
+  ipos: RecentlyListedIpo[];
+  total_count?: number;
+}
