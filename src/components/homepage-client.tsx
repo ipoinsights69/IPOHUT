@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { IpoStatistics, IpoData, ListingGainsResponse, IpoListingGain, IpoDetailData, RecentlyListedResponse, RecentlyListedIpo } from "@/config/api";
-import { Search, TrendingUp, Calendar, CheckCircle, Clock } from "lucide-react";
+import { IpoStatistics, IpoData, ListingGainsResponse, IpoListingGain, IpoDetailData, RecentlyListedResponse, RecentlyListedIpo, GmpResponse, GmpItem } from "@/config/api";
+import { Search, TrendingUp, Calendar, CheckCircle } from "lucide-react";
 import { Footer } from "@/components/footer";
 
 interface HomePageClientProps {
@@ -10,12 +10,73 @@ interface HomePageClientProps {
   listingGainsData: ListingGainsResponse | null;
   lowestGainsData: ListingGainsResponse | null;
   recentlyListedData?: RecentlyListedResponse | null;
+  gmpData?: GmpResponse | null;
 }
 
-export function HomePageClient({ ipoData, listingGainsData, lowestGainsData, recentlyListedData }: HomePageClientProps) {
+export function HomePageClient({ ipoData, listingGainsData, lowestGainsData, recentlyListedData, gmpData }: HomePageClientProps) {
   const [activeTab, setActiveTab] = useState<'top' | 'lowest'>('top');
   const [activeIpoTab, setActiveIpoTab] = useState<'upcoming' | 'open' | 'closed'>('upcoming');
+  const [isPaused, setIsPaused] = useState(false);
   const loading = false; // Data is already loaded from server
+
+  // Helpers for GMP formatting and values
+  const formatRupees = (val?: string): string => {
+    const s = (val ?? '').toString().trim();
+    if (!s || s === '0' || s === '0.00') return '₹—';
+    if (s.includes('—') || s === '-') return '₹—';
+    // Extract numeric content if present
+    const numeric = s.replace(/[^\d.\-]/g, '');
+    if (numeric && !isNaN(Number(numeric))) {
+      const n = Number(numeric);
+      if (n === 0) return '₹—';
+      return `₹${n.toLocaleString('en-IN')}`;
+    }
+    // If it already has a rupee sign or text like "₹66.51 Cr", keep as-is
+    if (s.startsWith('₹')) return s;
+    return s;
+  };
+
+  const parsePercent = (p?: string): { text: string; value: number | null } => {
+    const s = (p ?? '').toString().trim();
+    if (!s || s === '0' || s === '0.00' || s === '0%' || s === '0.00%') return { text: '—%', value: null };
+    const m = s.match(/-?\d+(?:\.\d+)?/);
+    const num = m ? parseFloat(m[0]) : null;
+    if (num === 0) return { text: '—%', value: null };
+    return { text: num !== null ? `${num}%` : '—%', value: num };
+  };
+
+  // Filter and prepare GMP items for marquee (remove items with insufficient data)
+  const filterValidGmpItem = (item: GmpItem): boolean => {
+    if (!item || !item.name || !item.slug) return false;
+    const { value: pctVal } = parsePercent(item.gmp_percentage);
+    const hasValidGmpPercent = pctVal !== null && pctVal !== 0;
+    const gmpPrice = formatRupees(item.gmp_price);
+    const hasValidGmpPrice = gmpPrice !== '₹—';
+    const ipoPrice = formatRupees(item.ipo_price);
+    const hasValidIpoPrice = ipoPrice !== '₹—';
+    return hasValidGmpPercent || (hasValidGmpPrice && hasValidIpoPrice);
+  };
+
+  const gmpItems: GmpItem[] = (gmpData?.data || []).filter(filterValidGmpItem);
+  const marqueeItems: GmpItem[] = gmpItems.length > 0 ? gmpItems : [];
+  const marqueeCompact: GmpItem[] = marqueeItems.slice(0, 30);
+
+  // Scroll functions
+  const scrollLeft = () => {
+    setIsAutoScrolling(false);
+    setScrollPosition(prev => Math.max(prev - 260, 0));
+  };
+
+  const scrollRight = () => {
+    setIsAutoScrolling(false);
+    const maxScroll = Math.max((marqueeItems.length * 260) - 1000, 0);
+    setScrollPosition(prev => Math.min(prev + 260, maxScroll));
+  };
+
+  const resumeAutoScroll = () => {
+    setIsAutoScrolling(true);
+    setScrollPosition(0);
+  };
 
   const getIposByStatus = (status: string) => {
     if (!ipoData?.by_status) return [];
@@ -520,6 +581,105 @@ export function HomePageClient({ ipoData, listingGainsData, lowestGainsData, rec
         </div>
       </section>
 
+      {/* IPO GMP Marquee Section */}
+      <section className="py-6 bg-white border-t border-b border-gray-100">
+        <div className="container mx-auto max-w-7xl px-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">IPO GMP</h2>
+              <p className="text-sm text-gray-600">Live Grey Market Premium updates</p>
+            </div>
+            <Link href="/ipos" className="text-gray-900 hover:text-gray-700 font-medium text-sm border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-all">
+              Explore IPOs
+            </Link>
+          </div>
+
+          {marqueeItems.length === 0 ? (
+            <div className="px-4 py-10 text-center">
+              <div className="text-gray-600">No active GMP data available at the moment.</div>
+              <p className="text-xs text-gray-500 mt-2">GMP data will appear here when IPOs have meaningful grey market activity.</p>
+            </div>
+          ) : (
+            <div
+              className="relative overflow-hidden"
+              onMouseEnter={() => setIsPaused(true)}
+              onMouseLeave={() => setIsPaused(false)}
+            >
+              {/* Marquee track - minimal, chip-style items */}
+              <div
+                className="flex items-center gap-6 whitespace-nowrap"
+                style={{
+                  // @ts-expect-error CSS custom props
+                  ['--gap']: '1.5rem',
+                  // @ts-expect-error CSS custom props
+                  ['--duration']: marqueeCompact.length > 20 ? '38s' : '28s',
+                  animation: 'marquee var(--duration) linear infinite',
+                  animationPlayState: isPaused ? 'paused' : 'running',
+                }}
+              >
+                {/* First copy */}
+                <div className="flex items-center gap-6 shrink-0">
+                  {marqueeCompact.map((item: GmpItem, idx: number) => {
+                    const { text: pctText, value: pctVal } = parsePercent(item.gmp_percentage);
+                    const isPos = (pctVal ?? 0) > 0;
+                    const isNeg = (pctVal ?? 0) < 0;
+                    const gmp = formatRupees(item.gmp_price);
+                    const showBadge = pctVal !== null;
+
+                    return (
+                      <Link
+                        key={`gmp-mini-${idx}`}
+                        href={`/ipo/${item.slug}`}
+                        className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-200 bg-white hover:bg-gray-50 transition-colors text-sm"
+                      >
+                        <span className="font-medium text-gray-900 truncate max-w-[180px]">{item.name}</span>
+                        {showBadge && (
+                          <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${isPos ? 'bg-green-100 text-green-700' : isNeg ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}`}>
+                            {isPos ? '+' : ''}{pctText}
+                          </span>
+                        )}
+                        {gmp !== '₹—' && (
+                          <span className="text-xs text-gray-600">GMP {gmp}</span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                {/* Second copy for seamless loop */}
+                <div className="flex items-center gap-6 shrink-0" aria-hidden="true">
+                  {marqueeCompact.map((item: GmpItem, idx: number) => {
+                    const { text: pctText, value: pctVal } = parsePercent(item.gmp_percentage);
+                    const isPos = (pctVal ?? 0) > 0;
+                    const isNeg = (pctVal ?? 0) < 0;
+                    const gmp = formatRupees(item.gmp_price);
+                    const showBadge = pctVal !== null;
+
+                    return (
+                      <Link
+                        key={`gmp-mini-dup-${idx}`}
+                        href={`/ipo/${item.slug}`}
+                        className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-200 bg-white hover:bg-gray-50 transition-colors text-sm"
+                      >
+                        <span className="font-medium text-gray-900 truncate max-w-[180px]">{item.name}</span>
+                        {showBadge && (
+                          <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${isPos ? 'bg-green-100 text-green-700' : isNeg ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}`}>
+                            {isPos ? '+' : ''}{pctText}
+                          </span>
+                        )}
+                        {gmp !== '₹—' && (
+                          <span className="text-xs text-gray-600">GMP {gmp}</span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Listing Gains Section with Tabs */}
       <section className="py-12 bg-white">
         <div className="container mx-auto max-w-7xl px-6">
@@ -706,7 +866,7 @@ export function HomePageClient({ ipoData, listingGainsData, lowestGainsData, rec
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto"> 
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
@@ -731,13 +891,23 @@ export function HomePageClient({ ipoData, listingGainsData, lowestGainsData, rec
                   ) : (
                     recentlyListedData.ipos.slice(0, 8).map((ipo: RecentlyListedIpo, index: number) => {
                       // Helpers to extract values from varying API shapes
-                      const getNested = (obj: any, path: string) => {
-                        return path.split('.').reduce((acc: any, key: string) => (acc && acc[key] !== undefined ? acc[key] : undefined), obj);
+                      const getNested = (obj: unknown, path: string): unknown => {
+                        if (obj === null || typeof obj !== 'object') return undefined;
+                        const keys = path.split('.');
+                        let acc: unknown = obj;
+                        for (const key of keys) {
+                          if (acc !== null && typeof acc === 'object' && key in (acc as Record<string, unknown>)) {
+                            acc = (acc as Record<string, unknown>)[key];
+                          } else {
+                            return undefined;
+                          }
+                        }
+                        return acc;
                       };
-                      const getCandidate = (obj: any, candidates: string[]) => {
+                      const getCandidate = <T = unknown>(obj: unknown, candidates: string[]): T | undefined => {
                         for (const key of candidates) {
-                          const val = key.includes('.') ? getNested(obj, key) : (obj as any)[key];
-                          if (val !== undefined && val !== null && val !== '') return val;
+                          const val = key.includes('.') ? getNested(obj, key) : getNested(obj, key);
+                          if (val !== undefined && val !== null && val !== '') return val as T;
                         }
                         return undefined;
                       };
@@ -751,20 +921,20 @@ export function HomePageClient({ ipoData, listingGainsData, lowestGainsData, rec
                       };
 
                       // Try multiple keys for prices
-const issueRaw = getCandidate(ipo as any, [
-  'issue_price', 'issuePrice', 'Issue Price', 'issue', 'Issue',
-  'ipo_details.Issue Price', 'ipo_details.price', 'ipo_details.Price Band'
-]);
-const listingRaw = getCandidate(ipo as any, [
-  'listing_price', 
-  'listingPrice', 
-  'Listing Price', 
-  'listing', 
-  'Listing',
-  'ipo_details.Listing Price', 
-  'ipo_details.listing_rate',
-  'listing_trading.Open'   // 👈 new candidate
-]);
+                      const issueRaw = getCandidate(ipo, [
+                        'issue_price', 'issuePrice', 'Issue Price', 'issue', 'Issue',
+                        'ipo_details.Issue Price', 'ipo_details.price', 'ipo_details.Price Band'
+                      ]);
+                      const listingRaw = getCandidate(ipo, [
+                        'listing_price',
+                        'listingPrice',
+                        'Listing Price',
+                        'listing',
+                        'Listing',
+                        'ipo_details.Listing Price',
+                        'ipo_details.listing_rate',
+                        'listing_trading.Open'
+                      ]);
 
                       const issuePriceNum = parseMoney(issueRaw);
                       const listingPriceNum = parseMoney(listingRaw);
@@ -776,7 +946,7 @@ const listingRaw = getCandidate(ipo as any, [
                         ? `₹${listingPriceNum.toFixed(0)}`
                         : (typeof listingRaw === 'string' && listingRaw.trim() !== '' ? listingRaw : '₹—');
 
-                      const exchange = getCandidate(ipo as any, [
+                      const exchange = getCandidate<string>(ipo, [
                         'exchange', 'listing_at', 'Listing At', 'listing', 'on_exchange', 'listed_at'
                       ]) ?? '—';
 
@@ -791,7 +961,9 @@ const listingRaw = getCandidate(ipo as any, [
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{issueDisplay}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{listingDisplay}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{(ipo as any).listing_date ?? '—'}</td>
+<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+  {ipo?.listing_date ?? '—'}
+</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{exchange}</td>
                         </tr>
                       );

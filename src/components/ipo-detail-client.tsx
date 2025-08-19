@@ -1,9 +1,13 @@
 "use client";
-import React, { useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
-import { IpoDetailData, IpoData } from "@/config/api";
+import { IpoDetailData, IpoData, TimeframeKey, MarketDataResponse, Candle } from "@/config/api";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, CheckCircle, TrendingUp, ArrowRight, FileText, Users, BarChart3, Target, Building2, Sparkles } from "lucide-react";
+import { Calendar, Clock, CheckCircle, TrendingUp, FileText, Users, BarChart3, Building2, Sparkles } from "lucide-react";
+import dynamic from "next/dynamic";
+import type { ApexOptions } from "apexcharts";
+
+const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 function getStatusColor(status: string) {
   switch ((status || "").toLowerCase()) {
@@ -70,6 +74,126 @@ if (data.lots && Array.isArray(data.lots) && data.lots.length > 0) {
   }
 
   return metrics;
+}
+
+// --- New: Market Data Minimal Line Chart Section ---
+const TIMEFRAMES: TimeframeKey[] = ["1D","7D","15D","1M","3M","6M","1Y","2Y"];
+
+function useIsin(detailData: IpoDetailData | null) {
+  return useMemo(() => {
+    const listing = detailData?.listing_details;
+    if (!listing) return null;
+    const tuple = listing.find(([k]) => k.toLowerCase() === "isin");
+    return tuple?.[1] || null;
+  }, [detailData]);
+}
+
+function formatShortDate(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { month: "short", day: "2-digit" });
+}
+
+function MarketMiniLine({ candles, title }: { candles: Candle[]; title: string }) {
+  type ChartPoint = { x: number; y: number };
+  type ChartSeries = { name: string; data: ChartPoint[] }[];
+
+  const series: ChartSeries = useMemo(
+    () => [
+      { name: title, data: candles.map((c) => ({ x: new Date(c.time).getTime(), y: c.close })) },
+    ],
+    [candles, title]
+  );
+  const options: ApexOptions = useMemo(
+    () => ({
+      chart: { type: "area", toolbar: { show: false }, zoom: { enabled: false }, animations: { enabled: true, easing: "easeinout", speed: 500 } },
+      stroke: { curve: "smooth", width: 2 },
+      dataLabels: { enabled: false },
+      grid: { borderColor: "#eee", strokeDashArray: 3 },
+      xaxis: { type: "datetime", labels: { show: true, style: { colors: ["#6B7280"] } } },
+      yaxis: { labels: { show: true, style: { colors: ["#6B7280"] } } },
+      fill: { type: "gradient", gradient: { shadeIntensity: 0.1, opacityFrom: 0.2, opacityTo: 0.05 } },
+      tooltip: { theme: "light", x: { format: "dd MMM" } },
+      colors: ["#10B981"],
+    }),
+    []
+  );
+
+  return (
+    <div className="w-full h-56">
+      <ApexChart options={options} series={series} type="area" height={224} />
+    </div>
+  );
+}
+
+function MarketDataSection({ basicData, detailData }: { basicData: IpoData; detailData: IpoDetailData | null }) {
+  const isin = useIsin(detailData);
+  const [tf, setTf] = useState<TimeframeKey>('7D');
+  const [data, setData] = useState<MarketDataResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let ignore = false;
+    async function load() {
+      if (!isin) return;
+      setLoading(true);
+      try {
+        const res = await fetch(`http://159.65.104.132:1234/api/ipo/get_market_data?isin=${encodeURIComponent(isin)}&timeframes=${tf}`);
+        const json = await res.json();
+        if (!ignore) setData(json);
+      } catch (e) {
+        if (!ignore) setData(null);
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    }
+    load();
+    return () => { ignore = true };
+  }, [isin, tf]);
+
+  const candles: Candle[] = useMemo(() => {
+    const key = tf as TimeframeKey;
+    const series = data?.data?.[key]?.daily_candles || [];
+    return Array.isArray(series) ? series.filter(c => typeof c.close === 'number' && c.time) : [];
+  }, [data, tf]);
+
+  const listingDate = useMemo(() => detailData?.listing_details?.find(([k]) => k.toLowerCase() === 'listing date')?.[1] || '', [detailData]);
+  const isinShort = isin ? `${isin.slice(0, 6)}…${isin.slice(-4)}` : '';
+
+  if (!isin) return null;
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 pt-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">{basicData.name} • Market Trend</h3>
+          <p className="text-xs text-gray-500">ISIN: {isinShort} {listingDate && `• Listed on ${listingDate}`}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {TIMEFRAMES.map(k => (
+            <button key={k} onClick={() => setTf(k)} className={`px-2.5 py-1 rounded-full text-xs border transition ${tf===k? 'bg-emerald-600 text-white border-emerald-600':'bg-white text-gray-700 border-gray-200 hover:border-gray-300'}`}>
+              {k}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="px-5 pb-4">
+        {loading ? (
+          <div className="h-56 flex items-center justify-center"><span className="text-sm text-gray-500">Loading market data…</span></div>
+        ) : candles.length > 0 ? (
+          <MarketMiniLine candles={candles} title={basicData.name} />
+        ) : (
+          <div className="h-56 flex items-center justify-center"><span className="text-sm text-gray-500">No chart data available</span></div>
+        )}
+        <div className="flex items-center justify-between mt-3">
+          <div className="text-xs text-gray-500">Last updated: {data?.last_updated ? formatShortDate(data.last_updated) : '—'}</div>
+          {detailData?.listing_gain_percent && (
+            <div className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">Listing Gain: {detailData.listing_gain_percent}</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function IpoDetailClient({
@@ -161,6 +285,9 @@ const tabs: { id: TabId; label: string; icon:  React.ReactNode  }[] = [
                   </div>
                 )}
               </div>
+
+              {/* New: Market Data Section */}
+              <MarketDataSection basicData={basicData} detailData={detailData} />
             </div>
             
 
@@ -223,7 +350,7 @@ onClick={() => setActiveTab(tab.id)}      // ✅
           </div>
 
           {/* Right: Sidebar Widgets */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             <SidebarWidgets detailData={detailData} keyMetrics={keyMetrics} />
           </div>
         </div>
@@ -235,51 +362,45 @@ onClick={() => setActiveTab(tab.id)}      // ✅
 function OverviewTab({ detailData }: { detailData: IpoDetailData | null }) {
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Company Overview</h3>
-        <div className="prose max-w-none text-gray-600">
-          <p>Detailed company information and IPO overview will be displayed here.</p>
+      {/* About Company */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-2">About the Company</h3>
+        <p className="text-gray-700 leading-relaxed text-sm">{detailData?.about_company?.description || "Detailed description not available."}</p>
+      </div>
+
+      {/* Key Info */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h3 className="font-semibold text-gray-900 mb-2">IPO Price</h3>
+          <ul className="text-sm text-gray-700 space-y-1">
+            {(detailData?.ipo_price || []).map(([k, v], idx) => (
+              <li key={`${k}-${idx}`} className="flex justify-between"><span className="text-gray-500">{k}</span><span className="font-medium">{v}</span></li>
+            ))}
+          </ul>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h3 className="font-semibold text-gray-900 mb-2">IPO Details</h3>
+          <ul className="text-sm text-gray-700 space-y-1">
+            {(detailData?.ipo_details || []).map(([k, v], idx) => (
+              <li key={`${k}-${idx}`} className="flex justify-between"><span className="text-gray-500">{k}</span><span className="font-medium">{v}</span></li>
+            ))}
+          </ul>
         </div>
       </div>
 
-      {/* IPO Details */}
-      {detailData?.ipo_details && detailData.ipo_details.length > 0 && (
-        <div>
-          <h4 className="text-md font-semibold text-gray-900 mb-3">IPO Details</h4>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {detailData.ipo_details.map((detail: [string, string], index: number) => (
-                <div key={`detail-${index}`} className="flex justify-between py-2 border-b border-gray-200 last:border-b-0">
-                  <span className="text-sm text-gray-600">{detail[0]}</span>
-                  <span className="text-sm font-medium text-gray-900">{detail[1]}</span>
-                </div>
+      {/* Reservation */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Reservation</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {(detailData?.reservation || []).map((row, idx) => (
+            <div key={idx} className="text-sm">
+              {Object.entries(row).map(([k, v]) => (
+                <div key={k} className="flex justify-between py-0.5"><span className="text-gray-500">{k}</span><span className="font-medium">{v}</span></div>
               ))}
             </div>
-          </div>
+          ))}
         </div>
-      )}
-
-      {/* Objectives */}
-      {detailData?.objectives && detailData.objectives.length > 0 && (
-        <div>
-          <h4 className="text-md font-semibold text-gray-900 mb-3">IPO Objectives</h4>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="space-y-3">
-              {detailData.objectives.map((objective, index) => (
-                <div key={`objective-${index}`} className="flex items-start gap-3 p-3 bg-white rounded border">
-                  <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Target className="w-3 h-3 text-emerald-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-gray-900">{objective["Objects of the Issue"]}</div>
-                    <div className="text-xs text-gray-600 mt-1">₹{objective["Expected Amount(₹ in crores)"]} crores</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -287,43 +408,27 @@ function OverviewTab({ detailData }: { detailData: IpoDetailData | null }) {
 function FinancialsTab({ detailData }: { detailData: IpoDetailData | null }) {
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Financial Information</h3>
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-2">KPI</h3>
+        <ul className="text-sm text-gray-700 space-y-1">
+          {(detailData?.KPI || []).map((row, idx) => (
+            <li key={idx} className="flex justify-between"><span className="text-gray-500">{row.KPI}</span><span className="font-medium">{row.Values}</span></li>
+          ))}
+        </ul>
       </div>
 
-      {/* KPI Data */}
-      {detailData?.KPI && detailData.KPI.length > 0 && (
-        <div>
-          <h4 className="text-md font-semibold text-gray-900 mb-3">Key Performance Indicators</h4>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {detailData.KPI.map((kpi, index) => (
-                <div key={`kpi-${index}`} className="bg-white rounded border p-3">
-                  <div className="text-xs text-gray-600 mb-1">{kpi.KPI}</div>
-                  <div className="text-sm font-semibold text-gray-900">{kpi.Values}</div>
-                </div>
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-2">EPS</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {(detailData?.EPS || []).map((row, idx) => (
+            <div key={idx} className="text-sm">
+              {Object.entries(row).map(([k, v]) => (
+                <div key={k} className="flex justify-between py-0.5"><span className="text-gray-500">{k}</span><span className="font-medium">{v}</span></div>
               ))}
             </div>
-          </div>
+          ))}
         </div>
-      )}
-
-      {/* Reservation Data */}
-      {detailData?.reservation && detailData.reservation.length > 0 && (
-        <div>
-          <h4 className="text-md font-semibold text-gray-900 mb-3">Share Reservation</h4>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="space-y-3">
-              {detailData.reservation.map((item, index) => (
-                <div key={`reservation-${index}`} className="flex justify-between items-center p-3 bg-white rounded border">
-                  <span className="text-sm text-gray-600">{item.Category}</span>
-                  <span className="text-sm font-medium text-gray-900">{item.Percentage}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -331,25 +436,14 @@ function FinancialsTab({ detailData }: { detailData: IpoDetailData | null }) {
 function TimelineTab({ detailData }: { detailData: IpoDetailData | null }) {
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">IPO Timeline</h3>
-      </div>
-
-      {detailData?.timeline && detailData.timeline.length > 0 && (
-        <div className="space-y-4">
-          {detailData.timeline.map((item, index) => (
-            <div key={`timeline-${index}`} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-              <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <Calendar className="w-4 h-4 text-emerald-600" />
-              </div>
-              <div className="flex-1">
-                <div className="text-sm font-medium text-gray-900">{item[0]}</div>
-                <div className="text-sm text-gray-600 mt-1">{item[1]}</div>
-              </div>
-            </div>
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-2">Timeline</h3>
+        <ul className="text-sm text-gray-700 space-y-1">
+          {(detailData?.timeline || []).map(([k, v], idx) => (
+            <li key={`${k}-${idx}`} className="flex justify-between"><span className="text-gray-500">{k}</span><span className="font-medium">{v}</span></li>
           ))}
-        </div>
-      )}
+        </ul>
+      </div>
     </div>
   );
 }
@@ -357,37 +451,16 @@ function TimelineTab({ detailData }: { detailData: IpoDetailData | null }) {
 function DocumentsTab({ detailData }: { detailData: IpoDetailData | null }) {
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Documents & Links</h3>
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-2">Documents</h3>
+        <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+          {(detailData?.prospectus_links || []).map((doc, idx) => (
+            <li key={`${doc.href}-${idx}`}>
+              <a className="text-emerald-700 hover:underline" href={doc.href} target="_blank" rel="noopener noreferrer">{doc.text}</a>
+            </li>
+          ))}
+        </ul>
       </div>
-
-      {detailData?.prospectus_links && detailData.prospectus_links.length > 0 && (
-        <div>
-          <h4 className="text-md font-semibold text-gray-900 mb-3">Prospectus</h4>
-          <div className="space-y-3">
-            {detailData.prospectus_links.map((link, index) => (
-              <a
-                key={`link-${index}`}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"
-              >
-                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <FileText className="w-4 h-4 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
-                    {link.title || link.text}
-                  </div>
-                  <div className="text-xs text-gray-600">Click to download</div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -537,3 +610,4 @@ function getConfidenceBadge(conf?: string) {
       return null;
   }
 }
+// Remove unused helpers to satisfy linter

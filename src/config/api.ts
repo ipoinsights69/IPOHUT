@@ -1,6 +1,6 @@
 export const API_CONFIG = {
-  // baseUrl: 'http://159.65.104.132:1234',
-  baseUrl: 'http://127.0.0.1:1234',
+  baseUrl: 'http://159.65.104.132:1234',
+  // baseUrl: 'http://127.0.0.1:1234',
 
   endpoints: {
     // IPO endpoints
@@ -12,6 +12,8 @@ export const API_CONFIG = {
     getIpoStatistics: '/api/ipo/statistics',
     listingGains: '/api/ipo/listing-gains',
     recentlyListed: '/api/ipo/recently-listed',
+    gmp: '/api/ipo/gmp',
+    getMarketData: '/api/ipo/get_market_data',
   }
 } as const;
 
@@ -46,6 +48,8 @@ export interface IpoDetailData {
   review: Array<Record<string, string>>;
   status: string;
   timeline: Array<[string, string]>;
+  listing_details?: Array<[string, string]>;
+  listing_gain_percent?: string;
   recommendation?: {
     confidence: "LOW" | "MEDIUM" | "HIGH";
     details: {
@@ -130,6 +134,29 @@ export interface ListingGainsResponse {
   ipos: IpoListingGain[];
   sort_by: string;
   total_count: number;
+}
+
+// Market data types
+export type TimeframeKey = '1D' | '7D' | '15D' | '1M' | '3M' | '6M' | '1Y' | '2Y';
+
+export interface Candle {
+  close: number;
+  high: number;
+  low: number;
+  open: number;
+  time: string; // ISO timestamp
+  volume: number;
+}
+
+export interface MarketSeries {
+  daily_candles: Candle[];
+}
+
+export type MarketDataPayload = Partial<Record<TimeframeKey, MarketSeries>>;
+
+export interface MarketDataResponse {
+  data: MarketDataPayload;
+  last_updated?: string;
 }
 
 // API utility functions
@@ -233,6 +260,41 @@ export const apiUtils = {
       console.error('Error fetching recently listed IPOs:', error);
       return null;
     }
+  },
+
+  async fetchGmp(limit: number = 20): Promise<GmpResponse | null> {
+    try {
+      const url = new URL(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.gmp}`);
+      url.searchParams.append('limit', limit.toString());
+      const response = await fetch(url.toString());
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data as GmpResponse;
+    } catch (error) {
+      console.error('Error fetching IPO GMP data:', error);
+      return null;
+    }
+  },
+
+  async fetchMarketData(isin: string, timeframes: TimeframeKey[] = ['7D']): Promise<MarketDataResponse | null> {
+    try {
+      const url = new URL(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.getMarketData}`);
+      url.searchParams.append('isin', isin);
+      if (timeframes && timeframes.length > 0) {
+        url.searchParams.append('timeframes', timeframes.join(','));
+      }
+      const response = await fetch(url.toString());
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data as MarketDataResponse;
+    } catch (error) {
+      console.error('Error fetching IPO market data:', error);
+      return null;
+    }
   }
 };
 
@@ -247,5 +309,31 @@ export interface RecentlyListedIpo {
 
 export interface RecentlyListedResponse {
   ipos: RecentlyListedIpo[];
+  total_count?: number;
+}
+
+export interface GmpItem {
+  basis_of_allotment_date: string;
+  closing_date: string;
+  display_order: number;
+  gmp_percentage: string; // e.g. "0.00%"
+  gmp_price: string; // may be empty or a number as string
+  ipo_category: string; // e.g. "SME"
+  ipo_id: string;
+  ipo_price: string; // may be empty or like "142"
+  ipo_size: string; // e.g. "₹66.51 Cr" or "0.40 Cr Shares"
+  last_updated: string; // e.g. "18-Aug 5:55"
+  listing_date: string;
+  lot_size: string;
+  market_interest: string; // e.g. "Moderate Demand"
+  name: string; // e.g. "Shivashrit Foods SME"
+  opening_date: string;
+  pe_ratio: string;
+  slug: string; // e.g. "shivashrit-foods-ipo"
+  subscription: string;
+}
+
+export interface GmpResponse {
+  data: GmpItem[];
   total_count?: number;
 }
